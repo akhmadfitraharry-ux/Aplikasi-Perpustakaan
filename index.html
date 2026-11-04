@@ -10,17 +10,13 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="firebase-config.js"></script>
 <script>
-/* Isi dengan konfigurasi Firebase milik Anda (lihat panduan-firebase.md).
-   Selama kosong, data tersimpan di peramban komputer/HP ini. */
-window.PUSTAKA_FIREBASE = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
-};
+/* Konfigurasi Firebase dibaca dari firebase-config.js. Cadangan: konfigurasi yang
+   ditempel lewat layar masuk (tersimpan di peramban ini). */
+(function(){var c=window.PUSTAKA_FIREBASE||{};
+  if(!c.apiKey){try{var l=JSON.parse(localStorage.getItem('pustaka_fbcfg')||'null');if(l&&l.apiKey)c=l}catch(e){}}
+  window.PUSTAKA_FIREBASE=c})();
 </script>
 <style>
 :root{--g1:#14532d;--g2:#166534;--g3:#22c55e;--y:#facc15;--bg:#eef3ee;--bg2:#e3ece4;--card:#fff;--tx:#10231a;--mu:#5b6f64;--bd:#d6e2d9;--rd:#dc2626;--or:#d97706;--bl:#2563eb;--sh:0 1px 1px rgba(16,35,26,.06),0 4px 8px rgba(16,35,26,.06),0 14px 28px rgba(16,35,26,.08);--sh2:0 2px 2px rgba(16,35,26,.08),0 10px 20px rgba(16,35,26,.12),0 30px 50px rgba(16,35,26,.14)}
@@ -208,6 +204,7 @@ canvas.pie{height:310px}
 .opr{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 14px;margin-bottom:8px;border:1px solid var(--bd);border-radius:14px;background:var(--card);box-shadow:var(--sh)}.opr .bd{white-space:nowrap}
 input.opin{font-size:18px;padding:14px 16px;border-radius:14px}
 @media(max-width:520px){.opr{flex-direction:column;align-items:flex-start}}
+.rts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.rt{position:relative;cursor:pointer}.rt input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}.rt span{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:28px;line-height:1;padding:10px 14px;border-radius:14px;border:2px solid var(--bd);background:var(--card);transition:.12s}.rt span small{font-size:11px;color:var(--mu);font-weight:700}.rt input:checked+span{border-color:var(--g2);background:#dcfce7;transform:translateY(-2px)}.rt input:focus-visible+span{outline:3px solid var(--bl)}[data-theme=dark] .rt input:checked+span{background:#0f3a22}
 </style>
 </head>
 <body>
@@ -250,8 +247,8 @@ const _lp={};
 function ensure(k){return _lp[k]||(_lp[k]=new Promise((ok,no)=>{const s=document.createElement('script');s.src=LIBS[k];s.onload=ok;s.onerror=()=>{delete _lp[k];no(new Error('Gagal memuat pustaka ('+k+'). Periksa koneksi internet.'))};document.head.appendChild(s)}))}
 
 /* ========== data ========== */
-const COLS=['kelas','kategori','buku','anggota','pinjaman','petugas','riwayat','cacah'];
-const S={db:{kelas:[],kategori:[],buku:[],anggota:[],pinjaman:[],petugas:[],riwayat:[],kunjungan:[],cacah:[],set:{}},user:null,page:'dashboard',scan:{a:null,b:null},ps:{},imp:null};
+const COLS=['kelas','kategori','buku','anggota','pinjaman','petugas','riwayat','cacah','kegiatan','survei','berkas'];
+const S={db:{kelas:[],kategori:[],buku:[],anggota:[],pinjaman:[],petugas:[],riwayat:[],kunjungan:[],cacah:[],kegiatan:[],survei:[],berkas:[],set:{}},user:null,page:'dashboard',scan:{a:null,b:null},ps:{},imp:null};
 const FBC=window.PUSTAKA_FIREBASE||{};
 const USE_FB=!!(FBC.apiKey&&FBC.projectId);
 const LS='pustaka_db_v1';
@@ -320,7 +317,12 @@ async function cardPNG(a){const W=856,H=540,c=document.createElement('canvas');c
 
 /* ========== login & sesi ========== */
 const hash=s=>{let h=5381;for(const c of String(s))h=((h<<5)+h+c.charCodeAt(0))|0;return String(h)};
-function showLogin(){$('#app').hidden=true;$('#login').hidden=false;
+function parseFbCfg(t){const c={};['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'].forEach(k=>{const m=new RegExp('["\']?'+k+'["\']?\\s*:\\s*["\']([^"\']+)["\']').exec(t);c[k]=m?m[1]:''});return c.apiKey&&c.projectId?c:null}
+function fbConnectScreen(){$('#app').hidden=true;$('#login').hidden=false;
+  $('#login').innerHTML=`<div class="lgpage"><div class="lgbook" aria-hidden="true"><div class="bk"><i class="f"><em>PUSTAKA</em></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="t"></i><i class="u"></i></div></div><div class="lgcard"><img class="lgl" src="${esc(logo())}" alt=""><h1>PUSTAKA</h1><div class="sn">Hubungkan Firebase</div><p class="ds">Firebase belum terhubung di alamat ini, jadi login email belum tersedia. Tempel konfigurasi Firebase Anda (firebaseConfig) di bawah ini.</p><form id="lf"><label class="fl"><span>Konfigurasi Firebase</span><textarea name="c" rows="6" required placeholder='apiKey: "...",&#10;authDomain: "...",&#10;projectId: "...",&#10;storageBucket: "...",&#10;messagingSenderId: "...",&#10;appId: "..."' style="width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:inherit;font:13px monospace"></textarea></label><button class="btn pri go">Hubungkan</button></form><p class="nt">Cara tetap: isi file <b>firebase-config.js</b> di repositori GitHub satu kali (lihat panduan). Menempel di sini hanya berlaku di peramban ini.</p><p class="nt"><a href="#" id="lcl">Pakai mode lokal tanpa akun</a></p><div class="cr">Design by Akhmad Fitra Harry, S.Pd</div></div></div>`;
+  $('#lcl').onclick=e=>{e.preventDefault();S.localMode=true;showLogin()};
+  $('#lf').onsubmit=e=>{e.preventDefault();const c=parseFbCfg(new FormData(e.target).get('c'));if(!c)return toast('Konfigurasi tidak terbaca. Salin seluruh isi firebaseConfig.','err');try{localStorage.setItem('pustaka_fbcfg',JSON.stringify(c))}catch(er){return toast('Penyimpanan peramban diblokir','err')}location.reload()}}
+function showLogin(){if(!USE_FB&&!S.localMode&&!S.db.petugas.length)return fbConnectScreen();$('#app').hidden=true;$('#login').hidden=false;
   const fb=USE_FB,first=!fb&&!S.db.petugas.length,btn=t=>`<button class="btn pri go">${t}</button>`;
   const desc=fb?'Masuk dengan akun petugas untuk membuka data perpustakaan.':first?'Pertama kali dibuka. Daftarkan petugas pertama untuk memulai.':'Pilih nama petugas untuk membuka data perpustakaan.';
   let form,note='';
@@ -340,7 +342,7 @@ function enter(){$('#login').hidden=true;$('#app').hidden=false;
   $('#blogo').src=logo();$('#bnama').textContent=set().nama;$('#usr').innerHTML=ICON('users',14)+'<span class="un">'+esc(S.user.nama)+'</span>';
   $('[data-act=menu]').innerHTML=ICON('menu');$('[data-act=logout]').innerHTML=ICON('out',14)+' Keluar';$('[data-act=theme]').innerHTML=ICON(document.documentElement.dataset.theme==='dark'?'sun':'moon');
   $('#stinfo').textContent=USE_FB?'Data tersimpan online di Firebase':'Data tersimpan di peramban ini';
-  const N=[['dashboard','Dashboard','home'],['scan','Scan','scan'],['kunjungan','Kunjungan','login'],['kelas','Kelas','layers'],['kategori','Kategori','tag'],['buku','Data Buku','book'],['opac','Katalog','book'],['pinjaman','Data Pinjaman','repeat'],['terlambat','Terlambat','alert'],['anggota','Anggota','users'],['naik','Kenaikan Kelas','layers'],['impor','Impor Data','upload'],['cacah','Cacah Ulang','clipboard'],['riwayat','Riwayat','clock'],['laporan','Laporan','file'],['kesiapan','Kesiapan Akreditasi','award'],['admin','Admin','shield']];
+  const N=[['dashboard','Dashboard','home'],['scan','Scan','scan'],['kunjungan','Kunjungan','login'],['kelas','Kelas','layers'],['kategori','Kategori','tag'],['buku','Data Buku','book'],['opac','Katalog','book'],['pinjaman','Data Pinjaman','repeat'],['terlambat','Terlambat','alert'],['anggota','Anggota','users'],['naik','Kenaikan Kelas','layers'],['impor','Impor Data','upload'],['cacah','Cacah Ulang','clipboard'],['riwayat','Riwayat','clock'],['laporan','Laporan','file'],['kegiatan','Kegiatan Literasi','users'],['survei','Survei Kepuasan','clipboard'],['kesiapan','Kesiapan Akreditasi','award'],['berkas','Berkas Akreditasi','file'],['admin','Admin','shield']];
   $('#nav').innerHTML=N.map(n=>`<a data-act="go" data-p="${n[0]}" id="n-${n[0]}">${ICON(n[2])}<span>${n[1]}</span></a>`).join('');
   window.PAGE_TITLES=Object.fromEntries(N.map(n=>[n[0],n[1]]));
   go(S.page);
@@ -355,7 +357,7 @@ function go(p){S.page=p;stopCam();$$('.nav a').forEach(a=>a.classList.toggle('on
   try{$('#view').innerHTML=PAGES[p]()}catch(e){console.error(e);$('#view').innerHTML='<div class="card">Terjadi kesalahan menampilkan halaman: '+esc(e.message)+'</div>'}
   const af=PAGES[p+'_after'];if(af)try{af()}catch(e){console.error(e)}
   $('#side').classList.remove('open');$('#shade')&&$('#shade').remove();window.scrollTo(0,0)}
-const refresh=()=>{if($('#app').hidden||$('#modal').innerHTML)return;if(S.page==='kunjungan'){kjRender();return}if(!['impor','scan','cacah','kesiapan','opac','naik'].includes(S.page)){go(S.page)}else if(S.page==='opac'){const r=$('#opres');if(r)r.innerHTML=opacList()}};
+const refresh=()=>{if($('#app').hidden||$('#modal').innerHTML)return;if(S.page==='kunjungan'){kjRender();return}if(!['impor','scan','cacah','kesiapan','opac','naik','survei'].includes(S.page)){go(S.page)}else if(S.page==='opac'){const r=$('#opres');if(r)r.innerHTML=opacList()}};
 const ph=(t,sub,btns)=>`<div class="ph"><div><h1>${t}</h1><p>${sub||''}</p></div><div class="row no-print">${btns||''}</div></div>`;
 
 /* ========== Dashboard ========== */
@@ -631,7 +633,7 @@ async function sample(){if(S.db.buku.length||S.db.anggota.length){if(!confirm('D
   await putMany('buku',B);await putMany('anggota',A);
   const P=[];const t=today();[[0,0,2,1],[1,1,5,0],[2,2,9,1],[3,3,14,0],[4,4,20,1],[5,5,3,0],[0,6,35,0],[1,7,45,0]].forEach(([a,b,ago,ret],i)=>{const d=addDays(t,-ago);P.push({id:uid(),bukuId:B[b].id,anggotaId:A[a].id,tglPinjam:d,tenggat:addDays(d,7),tglKembali:ret?'':(ago>9?addDays(d,6):''),petugas:S.user.nama})});
   P[0].tglKembali='';await putMany('pinjaman',P);await putMany('kunjungan',sampleKunj(A));await log('Impor','Data contoh dimuat');toast('Data contoh dimuat','ok');go(S.page)}
-async function wipe(){const w=prompt('Ini menghapus SEMUA buku, anggota, kelas, kategori, pinjaman, kunjungan, dan data cacah ulang. Ketik HAPUS untuk melanjutkan.');if(w!=='HAPUS')return;for(const c of ['pinjaman','kunjungan','cacah','buku','anggota','kelas','kategori'])await delAll(c);await log('Hapus','Semua data dikosongkan');toast('Data dikosongkan','ok');go(S.page)}
+async function wipe(){const w=prompt('Ini menghapus SEMUA buku, anggota, kelas, kategori, pinjaman, kunjungan, dan data cacah ulang. Ketik HAPUS untuk melanjutkan.');if(w!=='HAPUS')return;for(const c of ['pinjaman','kunjungan','cacah','kegiatan','survei','berkas','buku','anggota','kelas','kategori'])await delAll(c);await log('Hapus','Semua data dikosongkan');toast('Data dikosongkan','ok');go(S.page)}
 
 /* ========== PWA ========== */
 let deferred=null;
@@ -839,8 +841,8 @@ PAGES.cacah_after=()=>{const f=$('#ccstart');if(f)f.onsubmit=async e=>{e.prevent
 /* ========== Kesiapan akreditasi ========== */
 S.ps.kr={tahun:new Date().getFullYear()};
 const MANUAL=[['m_teks','Koleksi','Buku teks utama tersedia 2 eksemplar per mata pelajaran dan buku panduan guru tersedia'],['m_olah','Koleksi','Koleksi sudah diolah: nomor inventaris, label punggung, dan katalog'],
- ['m_sirk','Layanan','Layanan peminjaman berjalan dan siswa serta guru punya kartu anggota'],['m_tata','Layanan','Tata tertib dan jam layanan dipasang di perpustakaan'],['m_lit','Layanan','Ada kegiatan literasi atau promosi perpustakaan yang didokumentasikan (kunjungan kelas, lomba, bedah buku)'],
- ['m_sk','Pengelolaan','SK pengelola perpustakaan dari kepala sekolah'],['m_prog','Pengelolaan','Ada program kerja dan rencana anggaran tahunan perpustakaan'],['m_dana','Pengelolaan','Anggaran pengembangan koleksi dialokasikan dan buktinya tersimpan'],['m_ruang','Pengelolaan','Ruang, rak, meja baca, dan tata ruang sesuai standar sarana (periksa instrumen terbaru)'],['m_lap','Pengelolaan','Laporan tahunan perpustakaan disampaikan ke kepala sekolah (cetak dari menu Laporan)'],['m_dok','Pengelolaan','Berkas bukti (foto, SK, notulen, daftar hadir kegiatan) sudah dikumpulkan']];
+ ['m_sirk','Layanan','Layanan peminjaman berjalan dan siswa serta guru punya kartu anggota'],['m_tata','Layanan','Tata tertib dan jam layanan dipasang di perpustakaan'],
+ ['m_sk','Pengelolaan','SK pengelola perpustakaan dari kepala sekolah'],['m_prog','Pengelolaan','Ada program kerja dan rencana anggaran tahunan perpustakaan'],['m_dana','Pengelolaan','Anggaran pengembangan koleksi dialokasikan dan buktinya tersimpan'],['m_ruang','Pengelolaan','Ruang, rak, meja baca, dan tata ruang sesuai standar sarana (periksa instrumen terbaru)'],['m_lap','Pengelolaan','Laporan tahunan perpustakaan disampaikan ke kepala sekolah (cetak dari menu Laporan)']];
 function krJam(){const j=set().jam||{};let m=0;HARI.forEach(h=>{const a=toMin((j[h]||{}).a),b=toMin((j[h]||{}).b);if(a!=null&&b!=null&&b>a)m+=b-a});return m}
 function krCompute(){const s=set(),A=S.db.buku.filter(aktif),y=+S.ps.kr.tahun||new Date().getFullYear(),T=judulSet(A).size,byJ=j=>A.filter(b=>b.jenis===j),dj=l=>judulSet(l).size,
   fik=dj(byJ('Fiksi')),non=dj(byJ('Nonfiksi')),pay=fik+non,ref=new Set(byJ('Referensi').map(b=>sq(b.subjenis)).filter(Boolean)),ber=dj(byJ('Terbitan Berkala')),alat=new Set(byJ('Alat Peraga').map(b=>sq(b.subjenis)||sq(b.judul))),rombel=+s.rombel||0,I=[],
@@ -865,6 +867,10 @@ function krCompute(){const s=set(),A=S.db.buku.filter(aktif),y=+S.ps.kr.tahun||n
   const d30=addDays(today(),-30);
   add('Layanan','kun','Kunjungan tercatat (30 hari terakhir)',kjRange(d30,today()).length?'ok':'warn',fmtN(kjRange(d30,today()).length)+' kunjungan','Bukti pencatatan layanan');
   add('Layanan','pin','Peminjaman tercatat (30 hari terakhir)',S.db.pinjaman.some(p=>p.tglPinjam>=d30)?'ok':'warn',fmtN(S.db.pinjaman.filter(p=>p.tglPinjam>=d30).length)+' peminjaman','Bukti pencatatan layanan');
+  const ky=S.db.kegiatan.filter(k=>(k.tgl||'').startsWith(String(y))),sy=S.db.survei.filter(x=>(x.tgl||'').startsWith(String(y))),core=BKS_KAT.filter(k=>k!=='Lainnya'),got=core.filter(k=>S.db.berkas.some(b=>b.kat===k));
+  add('Layanan','keg','Kegiatan literasi / promosi tahun '+y,ky.length?'ok':'warn',ky.length+' kegiatan'+(ky.length?', '+fmtN(ky.reduce((n,k)=>n+(+k.peserta||0),0))+' peserta':''),'Bukti kegiatan layanan dan promosi (periksa instrumen terbaru)');
+  add('Layanan','sur','Survei kepuasan pemustaka tahun '+y,sy.length?'ok':'warn',sy.length+' responden'+(sy.length?', rata-rata '+(ASPEK.reduce((n,a)=>n+surAvg(sy,a[0]),0)/ASPEK.length).toFixed(1).replace('.',',')+' dari 5':''),'Bukti evaluasi layanan');
+  add('Pengelolaan','bks','Berkas bukti akreditasi',got.length===core.length?'ok':got.length?'warn':'err',got.length+' dari '+core.length+' kategori inti terisi'+(got.length<core.length?'. Belum ada: '+core.filter(k=>!got.includes(k)).join(', '):''),'Kumpulkan SK, program kerja, anggaran, tata tertib, dokumentasi, laporan, dan foto sarana');
   const cek=s.cek||{},mo=MANUAL.filter(m=>cek[m[0]]).length,ev=I.filter(x=>x.st!=='na'),ok=ev.filter(x=>x.st==='ok').length;
   return{I,mo,mt:MANUAL.length,ok,ev:ev.length,skor:Math.round((ok+mo)*100/(ev.length+MANUAL.length)),y}}
 const KST={ok:['✓','Terpenuhi'],warn:['!','Perlu perhatian'],err:['✕','Belum terpenuhi'],na:['?','Belum diisi']};
@@ -997,6 +1003,67 @@ Object.assign(ACT,{
 });
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.naik)S.ps.naik[t.dataset.naik]=t.value});
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.opac){S.ps.opac[t.dataset.opac]=t.value;const r=$('#opres');if(r)r.innerHTML=opacList()}});
+
+
+/* ========== Prioritas 3: kegiatan literasi, survei, berkas ========== */
+function imgToData(file,max,q){max=max||720;q=q||.6;return new Promise((ok,no)=>{const r=new FileReader();r.onerror=()=>no(new Error('Gagal membaca berkas'));r.onload=()=>{const im=new Image();im.onerror=()=>no(new Error('Gambar tidak bisa dibaca'));im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',q))};im.src=r.result};r.readAsDataURL(file)})}
+const safeUrl=u=>/^https?:\/\//i.test(String(u||'').trim())?String(u).trim():'';
+/* --- kegiatan --- */
+const KJENIS=['Kunjungan kelas','Gerakan literasi sekolah','Lomba / festival','Bedah buku / bercerita','Pameran / promosi','Pelatihan / rapat','Lainnya'];
+S.ps.keg={y:String(new Date().getFullYear())};
+const kegYears=()=>[...new Set([String(new Date().getFullYear()),...S.db.kegiatan.map(k=>(k.tgl||'').slice(0,4)).filter(Boolean)])].sort().reverse();
+const kegList=()=>S.db.kegiatan.filter(k=>!S.ps.keg.y||(k.tgl||'').startsWith(S.ps.keg.y)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+PAGES.kegiatan=()=>{const L=kegList(),f=S.ps.keg;
+  return ph('Kegiatan Literasi','Catat kegiatan perpustakaan lengkap dengan foto sebagai bukti dokumentasi.',`<button class="btn" data-act="kegprint">${ICON('print',15)} Cetak dokumentasi</button><button class="btn" data-act="kegxls">${ICON('download',15)} Ekspor</button><button class="btn pri" data-act="kegadd">${ICON('plus',15)} Tambah</button>`)+
+  `<div class="bar no-print"><select data-f="keg:y"><option value="">Semua tahun</option>${kegYears().map(y=>`<option ${y===f.y?'selected':''}>${y}</option>`).join('')}</select></div><p class="muted small">${L.length} kegiatan · ${fmtN(L.reduce((n,k)=>n+(+k.peserta||0),0))} peserta</p>`+
+  tbl(['Tanggal','Kegiatan','Jenis','Peserta','Foto',''],L.map(k=>`<tr><td style="white-space:nowrap">${fmt(k.tgl)}</td><td><b>${esc(k.nama)}</b><div class="muted small">${esc(k.sasaran||'')}</div></td><td>${esc(k.jenis||'')}</td><td>${esc(k.peserta||'')}</td><td>${(k.foto||[]).map(x=>`<img src="${x}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:8px;margin-right:4px">`).join('')}</td><td class="act"><button class="btn sm" data-act="kegedit" data-id="${k.id}">${ICON('edit',14)}</button> <button class="btn sm dg" data-act="kegdel" data-id="${k.id}">${ICON('trash',14)}</button></td></tr>`).join(''),'Belum ada kegiatan tercatat.')};
+function kegForm(o){o=o||{};let foto=[...(o.foto||[])];
+  modal(o.id?'Ubah Kegiatan':'Tambah Kegiatan',`<form id="frm"><label class="fl"><span>Nama kegiatan <b class="rq">*</b></span><input name="nama" required value="${esc(o.nama||'')}"></label><label class="fl"><span>Jenis</span><select name="jenis">${KJENIS.map(x=>`<option ${o.jenis===x?'selected':''}>${x}</option>`).join('')}</select></label><label class="fl"><span>Tanggal <b class="rq">*</b></span><input type="date" name="tgl" required value="${esc(o.tgl||today())}" max="${today()}"></label><label class="fl"><span>Jumlah peserta</span><input type="number" min="0" name="peserta" value="${esc(o.peserta||'')}"></label><label class="fl"><span>Sasaran (kelas atau kelompok)</span><input name="sasaran" value="${esc(o.sasaran||'')}" placeholder="mis. Kelas 3 dan 4"></label><label class="fl"><span>Uraian singkat</span><input name="uraian" value="${esc(o.uraian||'')}"></label><label class="fl"><span>Foto dokumentasi (maksimal 3, dikecilkan otomatis)</span><input type="file" id="kgf" accept="image/*" multiple></label><div id="kgp" class="row"></div><div class="df"><button type="button" class="btn" data-act="close">Batal</button><button class="btn pri">Simpan</button></div></form>`);
+  const draw=()=>{$('#kgp').innerHTML=foto.map((x,i)=>`<span style="position:relative"><img src="${x}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px"><button type="button" class="btn sm dg" data-rm="${i}" style="position:absolute;top:-6px;right:-6px;padding:1px 6px" aria-label="Hapus foto">×</button></span>`).join('')};draw();
+  $('#kgp').onclick=e=>{const b=e.target.closest('[data-rm]');if(b){foto.splice(+b.dataset.rm,1);draw()}};
+  $('#kgf').onchange=async e=>{for(const f of [...e.target.files]){if(foto.length>=3){toast('Maksimal 3 foto','err');break}try{foto.push(await imgToData(f))}catch(er){toast(er.message,'err')}}e.target.value='';draw()};
+  $('#frm').onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));try{await put('kegiatan',{...o,id:o.id||uid(),nama:d.nama.trim(),jenis:d.jenis,tgl:d.tgl,peserta:d.peserta,sasaran:d.sasaran.trim(),uraian:d.uraian.trim(),foto,petugas:o.petugas||S.user.nama});await log(o.id?'Ubah':'Tambah','Kegiatan: '+d.nama.trim());closeModal();go('kegiatan')}catch(er){toast(fbErr(er),'err')}}}
+function kegPrint(){const L=kegList().slice().reverse();if(!L.length)return toast('Belum ada kegiatan','err');
+  printDoc('Dokumentasi Kegiatan Literasi'+(S.ps.keg.y?' Tahun '+S.ps.keg.y:''),L.map((k,i)=>`<div style="break-inside:avoid;margin-bottom:12px"><h3>${i+1}. ${esc(k.nama)}</h3><p>${fmtLong(k.tgl)} · ${esc(k.jenis||'')}${k.sasaran?' · Sasaran: '+esc(k.sasaran):''}${k.peserta?' · '+esc(k.peserta)+' peserta':''}</p>${k.uraian?`<p>${esc(k.uraian)}</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap">${(k.foto||[]).map(x=>`<img src="${x}" alt="" style="height:140px;border:1px solid #888">`).join('')}</div></div>`).join('')+ttdHTML())}
+/* --- survei --- */
+const ASPEK=[['layanan','Keramahan dan kecepatan layanan petugas'],['koleksi','Kelengkapan dan kebaruan koleksi'],['ruang','Kenyamanan dan kebersihan ruang'],['manfaat','Manfaat perpustakaan untuk belajar dan membaca']];
+const FACES=['😞','🙁','😐','🙂','😄'];
+S.ps.sur={tab:'hasil',y:String(new Date().getFullYear())};
+const surList=()=>S.db.survei.filter(x=>!S.ps.sur.y||(x.tgl||'').startsWith(S.ps.sur.y));
+const surAvg=(L,k)=>L.length?L.reduce((n,x)=>n+(+(x.q||{})[k]||0),0)/L.length:0;
+function surStats(){const L=surList(),f1=v=>v.toFixed(1).replace('.',',');
+  if(!L.length)return '<div class="emp"><b>Belum ada responden</b>Buka tab Isi Survei di komputer perpustakaan agar siswa mengisinya sendiri.</div>';
+  const all=ASPEK.reduce((n,a)=>n+surAvg(L,a[0]),0)/ASPEK.length;
+  return `<div class="grid g4"><div class="card"><small class="muted">Responden</small><b style="font-size:24px;display:block">${fmtN(L.length)}</b></div><div class="card"><small class="muted">Rata-rata keseluruhan</small><b style="font-size:24px;display:block">${f1(all)} / 5</b></div></div><div class="card mt"><h3>Rata-rata per aspek</h3>${ASPEK.map(a=>{const v=surAvg(L,a[0]);return `<div style="margin:10px 0"><div class="row"><span class="sp">${a[1]}</span><b>${f1(v)}</b></div><div class="prog"><i style="width:${v/5*100}%"></i></div></div>`}).join('')}</div>
+  <div class="card mt"><h3>Saran dan komentar</h3>${L.filter(x=>x.saran).sort((a,b)=>b.tgl.localeCompare(a.tgl)).slice(0,30).map(x=>`<div class="kv"><span>${esc(x.saran)}</span><span class="muted small" style="white-space:nowrap">${fmt(x.tgl)} · ${esc(x.peran||'')}</span></div>`).join('')||'<p class="muted small">Belum ada saran tertulis.</p>'}</div>`}
+PAGES.survei=()=>{const f=S.ps.sur,t=f.tab;
+  const tabs=`<div class="tabs no-print"><button class="${t==='hasil'?'on':''}" data-act="surtab" data-t="hasil">Hasil</button><button class="${t==='isi'?'on':''}" data-act="surtab" data-t="isi">Isi Survei</button></div>`;
+  if(t==='isi')return ph('Survei Kepuasan','Serahkan layar ini kepada siswa atau guru. Jawaban tidak mencantumkan nama.')+tabs+`<form id="surf" class="card">${`<label class="fl"><span>Saya adalah</span><select name="peran"><option>Siswa</option><option>Guru</option><option>Lainnya</option></select></label>`}${ASPEK.map((a,i)=>`<div class="fl"><span style="font-size:15px;color:var(--tx)">${i+1}. ${a[1]}</span><div class="rts">${FACES.map((fc,j)=>`<label class="rt"><input type="radio" name="${a[0]}" value="${j+1}" ${j===0?'required':''}><span title="${j+1} dari 5">${fc}<small>${j+1}</small></span></label>`).join('')}</div></div>`).join('')}<label class="fl"><span>Saran untuk perpustakaan (boleh dikosongkan)</span><input name="saran" maxlength="300" autocomplete="off"></label><button class="btn pri" style="font-size:16px;padding:12px 22px">Kirim jawaban</button></form>`;
+  return ph('Survei Kepuasan','Hasil survei kepuasan pemustaka sebagai bukti evaluasi layanan.',`<button class="btn" data-act="surprint">${ICON('print',15)} Cetak</button><button class="btn pri" data-act="surtab" data-t="isi">Isi Survei</button>`)+tabs+`<div class="bar no-print"><select data-f="sur:y"><option value="">Semua tahun</option>${[...new Set([String(new Date().getFullYear()),...S.db.survei.map(x=>(x.tgl||'').slice(0,4))])].sort().reverse().map(y=>`<option ${y===f.y?'selected':''}>${y}</option>`).join('')}</select></div>`+surStats()};
+PAGES.survei_after=()=>{const f=$('#surf');if(!f)return;f.onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(f));const q={};ASPEK.forEach(a=>q[a[0]]=+d[a[0]]);try{await put('survei',{id:uid(),tgl:today(),peran:d.peran,q,saran:(d.saran||'').trim()});f.reset();window.scrollTo(0,0);toast('Terima kasih! Jawaban tersimpan.','ok')}catch(er){toast(fbErr(er),'err')}}};
+function surPrint(){const L=surList();if(!L.length)return toast('Belum ada responden','err');const f1=v=>v.toFixed(1).replace('.',',');
+  printDoc('Hasil Survei Kepuasan Pemustaka'+(S.ps.sur.y?' Tahun '+S.ps.sur.y:''),`<p>Jumlah responden: <b>${L.length}</b> (${Object.entries(cnt(L,x=>x.peran||'–')).map(x=>x[0]+' '+x[1]).join(', ')}). Skala 1 (sangat kurang) sampai 5 (sangat baik).</p>`+tbl(['No','Aspek','Rata-rata'],ASPEK.map((a,i)=>`<tr><td>${i+1}</td><td>${a[1]}</td><td>${f1(surAvg(L,a[0]))}</td></tr>`).join(''))+`<h3>Saran dan komentar</h3>`+(L.filter(x=>x.saran).map(x=>`<p>• ${esc(x.saran)} <i>(${esc(x.peran||'')}, ${fmt(x.tgl)})</i></p>`).join('')||'<p>Tidak ada saran tertulis.</p>')+ttdHTML())}
+/* --- berkas --- */
+const BKS_KAT=['SK pengelola','Program kerja dan anggaran','Tata tertib dan jam layanan','Dokumentasi kegiatan','Laporan perpustakaan','Foto ruang dan sarana','Pelatihan pengelola','Lainnya'];
+S.ps.bks={kat:''};
+const bksList=()=>S.db.berkas.filter(b=>!S.ps.bks.kat||b.kat===S.ps.bks.kat).sort((a,b)=>BKS_KAT.indexOf(a.kat)-BKS_KAT.indexOf(b.kat)||(b.tgl||'').localeCompare(a.tgl||''));
+PAGES.berkas=()=>{const L=bksList(),f=S.ps.bks,done=BKS_KAT.filter(k=>k!=='Lainnya'&&S.db.berkas.some(b=>b.kat===k)).length;
+  return ph('Berkas Akreditasi','Daftar bukti pendukung akreditasi: di mana setiap dokumen disimpan.',`<button class="btn" data-act="bksprint">${ICON('print',15)} Cetak daftar isi</button><button class="btn pri" data-act="bksadd">${ICON('plus',15)} Tambah</button>`)+
+  `<div class="card no-print"><div class="row"><b class="sp">Kategori inti terisi: ${done} dari ${BKS_KAT.length-1}</b></div><div class="prog mt"><i style="width:${done/(BKS_KAT.length-1)*100}%"></i></div><p class="small muted">Yang belum ada: ${BKS_KAT.filter(k=>k!=='Lainnya'&&!S.db.berkas.some(b=>b.kat===k)).join(', ')||'semua kategori sudah punya berkas'}. Berkas fisik dicatat lokasinya; berkas digital cukup tempel tautan Google Drive.</p></div>
+  <div class="bar no-print mt"><select data-f="bks:kat"><option value="">Semua kategori</option>${BKS_KAT.map(k=>`<option ${k===f.kat?'selected':''}>${k}</option>`).join('')}</select></div>`+
+  tbl(['Kategori','Nama berkas','Nomor / tanggal','Lokasi / tautan',''],L.map(b=>`<tr><td>${esc(b.kat)}</td><td><b>${esc(b.nama)}</b><div class="muted small">${esc(b.catatan||'')}</div></td><td>${esc(b.nomor||'')}${b.tgl?'<div class="muted small">'+fmt(b.tgl)+'</div>':''}</td><td>${esc(b.lokasi||'')}${safeUrl(b.link)?`<div><a href="${esc(safeUrl(b.link))}" target="_blank" rel="noopener">Buka tautan</a></div>`:''}</td><td class="act"><button class="btn sm" data-act="bksedit" data-id="${b.id}">${ICON('edit',14)}</button> <button class="btn sm dg" data-act="bksdel" data-id="${b.id}">${ICON('trash',14)}</button></td></tr>`).join(''),'Belum ada berkas tercatat.')};
+function bksForm(o){formModal(o?'Ubah Berkas':'Tambah Berkas',[{k:'kat',l:'Kategori',t:'select',o:BKS_KAT.map(x=>[x,x])},{k:'nama',l:'Nama dokumen',r:1},{k:'nomor',l:'Nomor dokumen'},{k:'tgl',l:'Tanggal dokumen',t:'date'},{k:'lokasi',l:'Lokasi simpan fisik',ph:'mis. Map biru, lemari perpustakaan rak 2'},{k:'link',l:'Tautan berkas digital (Google Drive dsb.)',t:'url',ph:'https://'},{k:'catatan',l:'Catatan'}],o||{kat:BKS_KAT[0]},async d=>{
+  if(d.link&&!safeUrl(d.link))throw new Error('Tautan harus diawali http:// atau https://');
+  await put('berkas',{...(o||{}),id:o?o.id:uid(),kat:d.kat,nama:d.nama.trim(),nomor:d.nomor.trim(),tgl:d.tgl,lokasi:d.lokasi.trim(),link:d.link.trim(),catatan:d.catatan.trim()});await log(o?'Ubah':'Tambah','Berkas: '+d.nama.trim());go('berkas')})}
+function bksPrint(){const L=bksList();if(!L.length)return toast('Belum ada berkas','err');printDoc('Daftar Isi Berkas Akreditasi Perpustakaan',tbl(['No','Kategori','Nama dokumen','Nomor / tanggal','Lokasi simpan'],L.map((b,i)=>`<tr><td>${i+1}</td><td>${esc(b.kat)}</td><td>${esc(b.nama)}</td><td>${esc(b.nomor||'')}${b.tgl?' / '+fmt(b.tgl):''}</td><td>${esc(b.lokasi||(safeUrl(b.link)?'Digital: '+b.link:''))}</td></tr>`).join(''))+ttdHTML())}
+Object.assign(ACT,{
+ kegadd:()=>kegForm(),kegedit:d=>kegForm(S.db.kegiatan.find(x=>x.id===d.id)),kegprint:kegPrint,
+ kegdel:async d=>{if(!confirm('Hapus kegiatan ini beserta fotonya?'))return;await del('kegiatan',d.id);go('kegiatan')},
+ kegxls:()=>exportRows('kegiatan-literasi',[['Tanggal','Kegiatan','Jenis','Sasaran','Peserta','Uraian'],...kegList().map(k=>[fmt(k.tgl),k.nama,k.jenis||'',k.sasaran||'',k.peserta||'',k.uraian||''])],true),
+ surtab:d=>{S.ps.sur.tab=d.t;go('survei')},surprint:surPrint,
+ bksadd:()=>bksForm(),bksedit:d=>bksForm(S.db.berkas.find(x=>x.id===d.id)),bksprint:bksPrint,
+ bksdel:async d=>{if(!confirm('Hapus catatan berkas ini?'))return;await del('berkas',d.id);go('berkas')}
+});
 
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;if(t.classList.contains('ov'))return;const f=ACT[t.dataset.act];if(f){Promise.resolve(f(t.dataset,t,e)).catch(er=>{console.error(er);toast(fbErr(er),'err')})}});
 document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('ov'))closeModal()});

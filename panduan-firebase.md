@@ -17,9 +17,9 @@ Tanpa Firebase, aplikasi tetap jalan, tetapi data hanya tersimpan di peramban pe
 4. Salin isi `firebaseConfig`: `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`.
 5. Jika layar sudah tertutup: Project settings, Your apps, pilih aplikasi web, bagian **SDK setup and configuration**, pilih **Config**.
 
-## 3. Isi konfigurasi di index.html
+## 3. Isi konfigurasi di firebase-config.js
 
-Buka `index.html` dengan Notepad, cari `window.PUSTAKA_FIREBASE`, lalu isi nilainya:
+Buka `firebase-config.js` dengan Notepad, isi nilainya, simpan:
 
 ```js
 window.PUSTAKA_FIREBASE = {
@@ -31,6 +31,10 @@ window.PUSTAKA_FIREBASE = {
   appId: "..."
 };
 ```
+
+Konfigurasi ada di file terpisah supaya **tidak hilang saat `index.html` diperbarui**. Saat memperbarui aplikasi, jangan timpa `firebase-config.js` yang sudah Anda isi.
+
+Cara cepat: jika layar masuk menampilkan "Hubungkan Firebase", tempel isi `firebaseConfig` di sana. Cara ini hanya berlaku di peramban itu, jadi tetap isi `firebase-config.js` agar semua perangkat langsung memakai login email.
 
 Kunci web Firebase memang tertanam di halaman web, jadi aman dibagikan. Keamanan dijaga oleh aturan Firestore dan login petugas.
 
@@ -60,7 +64,7 @@ Aturan ini hanya mengizinkan petugas yang sudah login.
 
 ## 6. Pasang di GitHub Pages
 
-1. Buat repositori di GitHub, unggah semua file paket: `index.html`, `manifest.json`, `sw.js`, dan keempat file ikon (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`). Semuanya di folder utama yang sama.
+1. Buat repositori di GitHub, unggah semua file paket: `index.html`, `firebase-config.js`, `manifest.json`, `sw.js`, dan keempat file ikon (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`). Semuanya di folder utama yang sama.
 2. **Settings**, **Pages**, pilih **Deploy from a branch**, cabang `main`, folder `/ (root)`, **Save**.
 3. Tunggu 1–2 menit. Alamatnya biasanya `https://namaanda.github.io/namarepo/`.
 
@@ -98,3 +102,8 @@ Repositori gratis harus publik agar Pages aktif. Data siswa tidak ikut terunggah
 - Tidak ada pengaturan Firebase tambahan. Unggah ulang semua file paket.
 - Katalog (OPAC) ada di dalam aplikasi, jadi perlu login. Untuk siswa, buka aplikasi di komputer perpustakaan yang sudah login lalu pakai tombol Layar penuh.
 - Sebelum kenaikan kelas, unduh cadangan di menu Admin.
+
+## Catatan versi dengan kegiatan literasi, survei, dan berkas akreditasi
+
+- Tidak perlu mengubah aturan Firestore.
+- Foto kegiatan dikecilkan otomatis (maksimal 3 per kegiatan). Berkas akreditasi hanya mencatat nama, lokasi simpan, dan tautan; file aslinya tetap di map atau Google Drive.
