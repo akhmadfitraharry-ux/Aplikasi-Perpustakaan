@@ -85,3 +85,16 @@ Repositori gratis harus publik agar Pages aktif. Data siswa tidak ikut terunggah
 | Akses ditolak | Aturan Firestore belum di-Publish, atau Email/Password belum aktif |
 | unauthorized-domain | Domain GitHub Pages belum ada di Authorized domains |
 | Email atau kata sandi salah | Akun petugas belum dibuat di Authentication, Users |
+
+## Catatan versi dengan kunjungan, cacah ulang, dan kesiapan akreditasi
+
+- Tidak perlu mengubah aturan Firestore. Koleksi baru (`kunjungan`, `cacah`) tercakup aturan yang sudah ada.
+- Kunjungan disimpan satu dokumen per hari agar hemat kuota baca. Aplikasi memuat 400 hari terakhir.
+- Saat memperbarui dari versi lama, unggah ulang semua file paket (terutama `index.html` dan `sw.js`), lalu tutup dan buka aplikasi dua kali.
+- Buku lama belum punya jenis koleksi. Pakai tombol **Ubah Massal** di Data Buku (filter "Jenis belum diisi") atau impor ulang dengan opsi Perbarui.
+
+## Catatan versi dengan guru, kenaikan kelas, WhatsApp, label, dan katalog
+
+- Tidak ada pengaturan Firebase tambahan. Unggah ulang semua file paket.
+- Katalog (OPAC) ada di dalam aplikasi, jadi perlu login. Untuk siswa, buka aplikasi di komputer perpustakaan yang sudah login lalu pakai tombol Layar penuh.
+- Sebelum kenaikan kelas, unduh cadangan di menu Admin.
