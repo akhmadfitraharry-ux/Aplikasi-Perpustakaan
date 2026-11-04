@@ -1087,7 +1087,7 @@ function startFB(u){(S.unsub||[]).forEach(f=>f());S.unsub=[];let ready=false;con
   const setUser=()=>{const p=S.db.petugas.find(x=>(x.email||'').toLowerCase()===(u.email||'').toLowerCase());S.user={id:u.uid,nama:p?p.nama:u.email};if(ready){$('#usr').innerHTML=ICON('users',14)+'<span class="un">'+esc(S.user.nama)+'</span>';$('#blogo').src=logo();$('#bnama').textContent=set().nama}};
   const err=e=>{toast(fbErr(e),'err')};
   COLS.forEach(c=>{let q=S.fs.collection(c);if(c==='riwayat')q=q.orderBy('waktu','desc').limit(500);S.unsub.push(q.onSnapshot(s=>{S.db[c]=s.docs.map(d=>d.data());check(c)},e=>{err(e);check(c)}))});
-  S.unsub.push(S.fs.collection('kunjungan').orderBy(firebase.firestore.FieldPath.documentId(),'desc').limit(400).onSnapshot(s=>{S.db.kunjungan=s.docs.flatMap(d=>d.data().items||[]);check('kunjungan')},e=>{err(e);check('kunjungan')}));S.unsub.push(S.fs.collection('meta').doc('sekolah').onSnapshot(s=>{if(s.exists)S.db.set=s.data();defaults();check('meta')},e=>{err(e);check('meta')}))}
+  S.unsub.push(S.fs.collection('kunjungan').where(firebase.firestore.FieldPath.documentId(),'>=',addDays(today(),-400)).onSnapshot(s=>{S.db.kunjungan=s.docs.flatMap(d=>d.data().items||[]);check('kunjungan')},e=>{err(e);check('kunjungan')}));S.unsub.push(S.fs.collection('meta').doc('sekolah').onSnapshot(s=>{if(s.exists)S.db.set=s.data();defaults();check('meta')},e=>{err(e);check('meta')}))}
 
 /* ========== mulai ========== */
 (function init(){
