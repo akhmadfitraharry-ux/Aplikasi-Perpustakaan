@@ -427,7 +427,7 @@ const nameForm=(col,o)=>formModal((o?'Ubah ':'Tambah ')+(col==='kelas'?'Kelas':'
 const JENIS=['Fiksi','Nonfiksi','Referensi','Buku Teks','Terbitan Berkala','Alat Peraga'];
 const SUBJ={'Referensi':['Ensiklopedia','Kamus','Buku Pedoman','Globe','Atlas','Almanak','Direktori'],'Alat Peraga':['Globe','Peta','Model/Torso','Alat Permainan Edukatif','Alat Peraga Sains','Alat Praktik'],'Terbitan Berkala':['Majalah','Surat Kabar','Tabloid','Jurnal'],'Buku Teks':['Buku Teks Utama','Buku Panduan Guru']};
 const SUBALL=[...new Set(Object.values(SUBJ).flat())];
-const SUMBER=['Pembelian','Hibah/Sumbangan','Dana BOS','Pemerintah/Dinas','Perpusnas','Lainnya'];
+const SUMBER=['Pembelian','Hibah/Sumbangan','Hadiah','Proyek','Dana BOS','Pemerintah/Dinas','Perpusnas','Lainnya'];
 const KONDISI=['Baik','Rusak','Hilang','Disiangi'];
 const kondOf=b=>b.kondisi||'Baik';
 const aktif=b=>{const k=kondOf(b);return k!=='Hilang'&&k!=='Disiangi'};
